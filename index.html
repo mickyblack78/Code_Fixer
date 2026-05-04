@@ -33,7 +33,36 @@
     </div>
 
     <script>
-        // We will add the "Handshake" logic here in the next step
+        const loadBtn = document.getElementById('load-library');
+const editor = document.getElementById('main-editor');
+
+// The logic we just added to the library:
+loadBtn.addEventListener('click', async () => {
+    try {
+        // 1. Open the file picker on your G35
+        const [fileHandle] = await window.showOpenFilePicker({
+            types: [{
+                description: 'JSON Library File',
+                accept: {'application/json': ['.json']}
+            }]
+        });
+
+        // 2. Read the file
+        const file = await fileHandle.getFile();
+        const content = await file.text();
+
+        // 3. Parse the DNA and notify the user
+        const libraryData = JSON.parse(content);
+        alert("Library Loaded: " + libraryData.library_metadata.version);
+        
+        // For now, let's just dump the library names into the editor to prove it works
+        editor.value = "--- LIBRARY ITEMS LOADED ---\n" + 
+                       libraryData.editor_blueprints.map(i => i.title).join('\n');
+
+    } catch (err) {
+        console.error("Storage handshake failed:", err);
+    }
+});
         console.log("Editor Shell Ready.");
     </script>
 </body>
