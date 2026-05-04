@@ -136,82 +136,87 @@
         ]
     };
 
-    // 2. THE SCANNER ENGINE
+   // NEW HIGH-SENSITIVITY SCANNER
     function scanAndDiagnose() {
         const code = mainEditor.value;
         const diagnostics = [];
 
-        // --- PART A: Structural Integrity ---
-        neuralLibrary.critical.forEach(rule => {
-            const openMatches = [...code.matchAll(rule.p)];
-            const closeMatches = [...code.matchAll(rule.c)];
-            
-            if (openMatches.length > closeMatches.length) {
-                const lastOpen = openMatches[openMatches.length - 1];
-                diagnostics.push({
-                    uid: `struct-${rule.id}`,
-                    severity: 'high',
-                    msg: rule.msg,
-                    pos: lastOpen.index,
-                    suggestion: rule.id.includes('TAG') ? `</${rule.n}>` : rule.c.source.replace('\\', ''),
-                    action: 'INJECT'
+        // 1. Structural Scan (Brackets/Parens) - Now detects even if touching text
+        const structures = [
+            { o: /\{/g, c: /\}/g, n: 'Brace' },
+            { o: /\(/g, c: /\)/g, n: 'Paren' },
+            { o: /\[/g, c: /\]/g, n: 'Bracket' }
+        ];
+        structures.forEach(s => {
+            const oCount = (code.match(s.o) || []).length;
+            const cCount = (code.match(s.c) || []).length;
+            if (oCount !== cCount) {
+                diagnostics.push({ 
+                    uid: `struct-${s.n}`, 
+                    severity: 'high', 
+                    msg: `${s.n} Mismatch: ${oCount} open vs ${cCount} closed`, 
+                    pos: code.lastIndexOf(oCount > cCount ? '{' : '}'), 
+                    suggestion: oCount > cCount ? (s.n==='Brace' ? '}' : s.n==='Paren' ? ')' : ']') : '',
+                    action: 'INJECT' 
                 });
             }
         });
 
-        // --- PART B: Intelligence Typo Detection ---
+        // 2. HTML Integrity Scan (Catches your "HTM" or missing "<" errors)
+        const coreTags = ['html', 'head', 'body', 'script', 'style', 'div', 'span'];
+        coreTags.forEach(tag => {
+            const openTag = new RegExp('<' + tag, 'gi');
+            const closeTag = new RegExp('</' + tag, 'gi');
+            const oT = (code.match(openTag) || []).length;
+            const cT = (code.match(closeTag) || []).length;
+            if (oT !== cT) {
+                diagnostics.push({ uid: `tag-${tag}`, severity: 'high', msg: `Critical Tag Failure: <${tag}> balance is off.`, pos: 0, suggestion: `</${tag}>`, action: 'INJECT' });
+            }
+        });
+
+        // 3. Typo Search (Keywords)
         neuralLibrary.typos.forEach(rule => {
-            let match;
-            while ((match = rule.find.exec(code)) !== null) {
-                const uid = `typo-${rule.fix}-${match.index}`;
-                if (!dismissedUIDs.has(uid)) {
-                    diagnostics.push({
-                        uid: uid,
-                        severity: 'medium',
-                        msg: rule.msg,
-                        pos: match.index,
-                        len: match[0].length,
-                        suggestion: rule.fix,
-                        action: 'REPLACE'
-                    });
-                }
+            let m; while ((m = rule.find.exec(code)) !== null) {
+                const uid = `typo-${rule.fix}-${m.index}`;
+                diagnostics.push({ uid, severity: 'medium', msg: `Syntax Error: ${m[0]}`, pos: m.index, len: m[0].length, suggestion: rule.fix, action: 'REPLACE' });
             }
         });
 
         renderDiagnostics(diagnostics);
     }
 
-    // 3. UI RENDERER (Action Center Bridge)
     function renderDiagnostics(findings) {
         fixList.innerHTML = '';
+        // Separate visible faults from hidden ones
         const active = findings.filter(f => !dismissedUIDs.has(f.uid));
+        const hiddenCount = dismissedUIDs.size;
 
-        if (active.length > 0) {
-            neuralStatus.style.borderColor = 'var(--error)';
-            neuralStatus.style.color = 'var(--error)';
-            neuralStatus.innerText = `${active.length} FAULTS DETECTED`;
-        } else {
-            neuralStatus.style.borderColor = 'var(--neon)';
-            neuralStatus.style.color = 'var(--neon)';
-            neuralStatus.innerText = `SYSTEM OPTIMAL`;
+        neuralStatus.style.color = active.length > 0 ? 'var(--error)' : 'var(--neon)';
+        neuralStatus.innerText = active.length > 0 ? `${active.length} FAULTS` : `SYSTEM OPTIMAL`;
+
+        // If there are hidden errors, show a "RECALL" header
+        if (hiddenCount > 0) {
+            const recallBtn = document.createElement('div');
+            recallBtn.style = "padding:10px; color:#555; font-size:10px; text-align:center; cursor:pointer; text-decoration:underline;";
+            recallBtn.innerText = `RESET ${hiddenCount} EXCEPTIONS`;
+            recallBtn.onclick = () => { dismissedUIDs.clear(); scanAndDiagnose(); };
+            fixList.appendChild(recallBtn);
         }
 
         active.forEach(issue => {
             const div = document.createElement('div');
             div.className = 'fix-item';
             div.innerHTML = `
-                <div style="font-size:12px; color:#aaa;">${issue.severity.toUpperCase()} PRIORITY</div>
-                <div style="font-weight:bold;">${issue.msg}</div>
-                <div style="display:flex; gap:10px; margin-top:5px;">
-                    <button class="fix-btn" onclick="applySmartFix('${issue.uid}', ${issue.pos}, ${issue.len || 0}, '${issue.suggestion}', '${issue.action}')">
-                        ${issue.action} ${issue.suggestion}
-                    </button>
-                    <button class="fix-btn" style="background:#444; color:#fff;" onclick="dismissFault('${issue.uid}')">EXCEPT</button>
+                <div style="font-size:10px; opacity:0.6;">${issue.uid.split('-')[0].toUpperCase()} ERROR</div>
+                <b>${issue.msg}</b>
+                <div style="display:flex; gap:10px; margin-top:8px;">
+                    <button class="fix-btn" onclick="applySmartFix('${issue.uid}', ${issue.pos}, ${issue.len || 0}, '${issue.suggestion}', '${issue.action}')">APPLY FIX</button>
+                    <button class="fix-btn" style="background:#333; color:#fff;" onclick="dismissFault('${issue.uid}')">EXCEPT</button>
                 </div>
             `;
             fixList.appendChild(div);
         });
-    }
+    } 
 
     // 4. PREVIEW & UI CONTROLS
     function toggleDrawer(id) {
