@@ -218,7 +218,7 @@
             `;
             fixList.appendChild(div);
         });
-        
+        }
 
     // 4. PREVIEW & UI CONTROLS
     function toggleDrawer(id) {
@@ -400,16 +400,14 @@
         scanTimeout = setTimeout(() => {
             saveState();
             scanAndDiagnose();
-        }, 500); // Wait 500ms after typing stops
-        function inspectError(pos) {
+               }, 500);
+    });
+    
+         function inspectError(pos) {
     mainEditor.focus();
     mainEditor.setSelectionRange(pos, pos + 1);
-    const lines = mainEditor.value.substr(0, pos).split('\n');
-    mainEditor.scrollTop = (lines.length * 24) - (mainEditor.clientHeight / 2);
-        }
-        document.getElementById('save-indicator')
-        .onclick = () => { mainEditor.select(); };  
-    });
+}
+document.getElementById('save-indicator').onclick = () => { mainEditor.select(); };
 </script>
 </body>
 </html>
