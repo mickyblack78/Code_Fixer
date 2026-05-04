@@ -206,7 +206,7 @@
         active.forEach(issue => {
             const div = document.createElement('div');
             div.className = 'fix-item';
-            div.innerHTML = `
+            div.innerHTML = `<b onclick="inspectError(${issue.pos})" style="cursor:pointer; text-decoration:underline;">${issue.msg}</b> ...`;
                 <div style="font-size:10px; opacity:0.6;">${issue.uid.split('-')[0].toUpperCase()} ERROR</div>
                 <b>${issue.msg}</b>
                 <div style="display:flex; gap:10px; margin-top:8px;">
@@ -399,6 +399,13 @@
             saveState();
             scanAndDiagnose();
         }, 500); // Wait 500ms after typing stops
+        function inspectError(pos) {
+    mainEditor.focus();
+    mainEditor.setSelectionRange(pos, pos + 1);
+    const lines = mainEditor.value.substr(0, pos).split('\n');
+    mainEditor.scrollTop = (lines.length * 24) - (mainEditor.clientHeight / 2);
+        }
+        document.getElementById('save-indicator').onclick = () => { mainEditor.select(); };  
     });
 </script>
 </body>
