@@ -136,35 +136,7 @@
         ]
     };
 
-   // NEW HIGH-SENSITIVITY SCANNER
-    function scanAndDiagnose() {
-        const code = mainEditor.value;
-        const diagnostics = [];
-
-        // 1. Structural Scan (Brackets/Parens) - Now detects even if touching text
-        const structures = [
-            { o: /\{/g, c: /\}/g, n: 'Brace' },
-            { o: /\(/g, c: /\)/g, n: 'Paren' },
-            { o: /\[/g, c: /\]/g, n: 'Bracket' }
-        ];
-        structures.forEach(s => {
-            const oCount = (code.match(s.o) || []).length;
-            const cCount = (code.match(s.c) || []).length;
-            if (oCount !== cCount) {
-                diagnostics.push({ 
-                    uid: `struct-${s.n}`, 
-                    severity: 'high', 
-                    msg: `${s.n} Mismatch: ${oCount} open vs ${cCount} closed`, 
-                    pos: code.lastIndexOf(oCount > cCount ? '{' : '}'), 
-                    suggestion: oCount > cCount ? (s.n==='Brace' ? '}' : s.n==='Paren' ? ')' : ']') : '',
-                    action: 'INJECT' 
-                });
-            }
-        });
-
-        // 2. HTML Integrity Scan (Catches your "HTM" or missing "<" errors)
-        const coreTags = ['html', 'head', 'body', 'script', 'style', 'div', 'span'];
-        coreTags.forEach(tag => {
+   // NEW  => {
             const openTag = new RegExp('<' + tag, 'gi');
             const closeTag = new RegExp('</' + tag, 'gi');
             const oT = (code.match(openTag) || []).length;
@@ -173,17 +145,78 @@
                 diagnostics.push({ uid: `tag-${tag}`, severity: 'high', msg: `Critical Tag Failure: <${tag}> balance is off.`, pos: 0, suggestion: `</${tag}>`, action: 'INJECT' });
             }
         });
+        function scanAndDiagnose() {
+    const code = mainEditor.value;
+    const lines = code.split('\n');
+    let faults = [];
 
-        // 3. Typo Search (Keywords)
-        neuralLibrary.typos.forEach(rule => {
-            let m; while ((m = rule.find.exec(code)) !== null) {
-                const uid = `typo-${rule.fix}-${m.index}`;
-                diagnostics.push({ uid, severity: 'medium', msg: `Syntax Error: ${m[0]}`, pos: m.index, len: m[0].length, suggestion: rule.fix, action: 'REPLACE' });
+    // 1. STRUCTURAL INTEGRITY (Brackets, Parens, Quotes)
+    const stack = [];
+    const openers = { '{': '}', '(': ')', '[': ']', '`': '`' };
+    const closers = { '}': '{', ')': '(', ']': '[' };
+
+    lines.forEach((lineText, index) => {
+        const lineNum = index + 1;
+        for (let i = 0; i < lineText.length; i++) {
+            const char = lineText[i];
+            
+            // Handle Openers
+            if (openers[char]) {
+                // Special check for backticks (toggle logic)
+                if (char === '`' && stack[stack.length - 1]?.char === '`') {
+                    stack.pop();
+                } else {
+                    stack.push({ char, line: lineNum, pos: i });
+                }
+            } 
+            // Handle Closers
+            else if (closers[char]) {
+                const last = stack.pop();
+                if (!last || last.char !== closers[char]) {
+                    faults.push({ 
+                        line: lineNum, 
+                        msg: `Unexpected '${char}' (No matching '${closers[char]}')`, 
+                        type: 'bracket'
+                    });
+                }
             }
-        });
+        }
+    });
 
-        renderDiagnostics(diagnostics);
+    // 2. LONELY OPENER DETECTION (Finds the missing '}')
+    while (stack.length > 0) {
+        const lonely = stack.pop();
+        faults.push({ 
+            line: lonely.line, 
+            msg: `Missing closing '${openers[lonely.char]}'`, 
+            type: 'bracket',
+            char: openers[lonely.char]
+        });
     }
+
+    // 3. EXECUTION SANDBOX (The Browser's Internal Parser)
+    try {
+        new Function(code);
+    } catch (e) {
+        let errorLine = "Unknown";
+        // Extract line number from the browser's error stack
+        const stackMatch = e.stack?.match(/<anonymous>:(\d+):(\d+)/);
+        if (stackMatch) errorLine = stackMatch[1];
+        
+        faults.push({ 
+            line: errorLine, 
+            msg: `Syntax: ${e.message}`,
+            type: 'syntax'
+        });
+    }
+
+    // 4. OUTPUT TO UI
+    renderDiagnostics(findings);
+        }
+
+
+        
+    
 
     function renderDiagnostics(findings) {
         fixList.innerHTML = '';
