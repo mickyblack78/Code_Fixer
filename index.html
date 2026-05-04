@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Master PWA Studio</title>
+    <style>
+        /* This CSS comes from your 'CORE_LAYOUT' library entry */
+        html, body { 
+            background: #000; color: #0f0; font-family: monospace;
+            margin: 0; padding: 0; height: 100%; overflow: hidden;
+            display: flex; flex-direction: column;
+        }
+        .header { height: 60px; border-bottom: 1px solid #0f0; display: flex; align-items: center; padding: 0 10px; }
+        .footer { height: 70px; border-top: 1px solid #0f0; display: flex; align-items: center; padding: 0 10px; }
+        .editor-space { flex: 1; overflow: hidden; display: flex; flex-direction: column; }
+        textarea { flex: 1; background: #050505; color: #0f0; border: none; padding: 15px; font-size: 14px; outline: none; resize: none; }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <span id="project-title">NEW PROJECT</span>
+    </div>
+
+    <div class="editor-space">
+        <textarea id="main-editor" placeholder="Ready for library injection..."></textarea>
+    </div>
+
+    <div class="footer">
+        <button id="load-library">LOAD LIBRARY</button>
+        <!-- Placeholder for future search and snippets -->
+    </div>
+
+    <script>
+        // We will add the "Handshake" logic here in the next step
+        console.log("Editor Shell Ready.");
+    </script>
+</body>
+</html>
