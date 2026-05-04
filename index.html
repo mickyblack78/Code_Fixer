@@ -407,7 +407,8 @@
     const lines = mainEditor.value.substr(0, pos).split('\n');
     mainEditor.scrollTop = (lines.length * 24) - (mainEditor.clientHeight / 2);
         }
-        document.getElementById('save-indicator').onclick = () => { mainEditor.select(); };  
+        document.getElementById('save-indicator')
+        .onclick = () => { mainEditor.select(); };  
     });
 </script>
 </body>
