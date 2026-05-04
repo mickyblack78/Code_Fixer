@@ -15,13 +15,32 @@
         .editor-space { flex: 1; overflow: hidden; display: flex; flex-direction: column; }
         textarea { flex: 1; background: #050505; color: #0f0; border: none; padding: 15px; font-size: 14px; outline: none; resize: none; }
         button { background: #0f0; color: #000; border: none; padding: 10px 20px; font-weight: bold; cursor: pointer; }
+        .error-item {
+    color: #f88;
+    padding: 8px;
+    margin-bottom: 5px;
+    border-left: 3px solid #f00;
+    background: #222;
+    cursor: pointer;
+}
+.error-item:active {
+    background: #333;
+}
     </style>
 </head>
 <body>
 
     <div class="header">
-        <span id="project-title">NEW PROJECT</span>
+    <span id="project-title">PROJECT: RING</span>
+    <div id="status-box" onclick="toggleErrorList()" style="margin-left: auto; width: 50px; height: 40px; background: #0f0; color: #000; display: flex; align-items: center; justify-content: center; font-weight: bold; border-radius: 5px; cursor: pointer;">
+        <span id="status-icon">✓</span>
     </div>
+</div>
+
+<!-- ERROR LIST CONTAINER (HIDDEN BY DEFAULT) -->
+<div id="error-container" style="display:none; background: #1a1a1a; border-bottom: 1px solid #f00; max-height: 150px; overflow-y: auto; padding: 10px; font-size: 12px;">
+    <div id="error-list"></div>
+</div>
 
     <div class="editor-space">
         <textarea id="main-editor" placeholder="Ready for library injection..."></textarea>
@@ -56,8 +75,56 @@
             };
             reader.readAsText(file);
         });
+        const statusBox = document.getElementById('status-box');
+    const statusIcon = document.getElementById('status-icon');
+    const errorContainer = document.getElementById('error-container');
+    const errorList = document.getElementById('error-list');
 
-        console.log("System Operational.");
+    function toggleErrorList() {
+        errorContainer.style.display = errorContainer.style.display === 'none' ? 'block' : 'none';
+    }
+
+    function runSieve() {
+        const code = mainEditor.value;
+        const errors = [];
+
+        // Bracket Logic
+        const brackets = [
+            { open: '{', close: '}', name: 'Curly Braces' },
+            { open: '(', close: ')', name: 'Parentheses' },
+            { open: '[', close: ']', name: 'Square Brackets' }
+        ];
+
+        brackets.forEach(b => {
+            const openCount = (code.match(new RegExp('\\' + b.open, 'g')) || []).length;
+            const closeCount = (code.match(new RegExp('\\' + b.close, 'g')) || []).length;
+            if (openCount !== closeCount) {
+                errors.push(`${b.name} Mismatch: ${openCount} open vs ${closeCount} closed.`);
+            }
+            // HTML Tag Logic
+        const tags = ['div', 'span', 'button', 'script', 'style'];
+        tags.forEach(tag => {
+            const openTag = (code.match(new RegExp('<' + tag + '>', 'g')) || []).length;
+            const closeTag = (code.match(new RegExp('</' + tag + '>', 'g')) || []).length;
+            if (openTag !== closeTag) {
+                errors.push(`HTML Tag Mismatch: <${tag}> (${openTag} open vs ${closeTag} closed).`);
+            }
+        });
+        });
+
+        // Update UI
+        if (errors.length > 0) {
+            statusBox.style.background = '#f00';
+            statusIcon.innerText = errors.length;
+            errorList.innerHTML = errors.map(err => `<div style="color:#f88; margin-bottom:5px; border-bottom:1px dashed #333;">• ${err}</div>`).join('');
+        } else {
+            statusBox.style.background = '#0f0';
+            statusIcon.innerText = '✓';
+            errorList.innerHTML = '<div style="color:#0f0;">No structural errors detected.</div>';
+        }
+    }
+            mainEditor.addEventListener('input', runSieve);
+            console.log("System Operational.");
     </script>
 </body>
 </html>
