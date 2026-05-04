@@ -250,6 +250,8 @@
             // Inject missing structure (e.g., adding '}' at the end of a block)
             // Smart Injection: Finds the next logical newline or end of file
             newCode = code.substring(0, pos + 1) + "\n" + suggestion + code.substring(pos + 1);
+        }  else if (action === 'DELETE') {
+    newCode = code.substring(0, pos) + code.substring(pos + 1);
         }
 
         mainEditor.value = newCode;
