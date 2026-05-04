@@ -3,190 +3,396 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Master PWA Studio</title>
+    <title>NEURAL STUDIO</title>
     <style>
+        :root { --neon: #0f0; --error: #f00; --bg: #000; --panel: #111; --text: #0f0; }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         html, body { 
-            background: #000; color: #0f0; font-family: monospace;
-            margin: 0; padding: 0; height: 100%; overflow: hidden;
-            display: flex; flex-direction: column;
+            background: var(--bg); color: var(--text); font-family: 'Courier New', monospace;
+            margin: 0; padding: 0; height: 100%; overflow: hidden; display: flex; flex-direction: column;
         }
-        .header { height: 60px; border-bottom: 1px solid #0f0; display: flex; align-items: center; padding: 0 10px; z-index: 10; background: #000; }
-        .footer { height: 70px; border-top: 1px solid #0f0; display: flex; align-items: center; padding: 0 10px; background: #000; }
-        .editor-space { flex: 1; overflow: hidden; display: flex; flex-direction: column; position: relative; }
+
+        /* HEADER SECTION */
+        .header { 
+            height: 60px; border-bottom: 2px solid var(--neon); 
+            display: flex; align-items: center; padding: 0 15px; background: var(--bg); z-index: 100;
+        }
+        #neural-status { 
+            margin-left: auto; padding: 5px 15px; border: 1px solid var(--neon); 
+            border-radius: 20px; font-size: 12px; font-weight: bold; cursor: pointer;
+        }
+
+        /* MAIN WORKSPACE */
+        .workspace { flex: 1; display: flex; flex-direction: column; position: relative; overflow: hidden; }
         
         textarea { 
-            flex: 1; background: #050505; color: #0f0; border: none; 
-            padding: 15px; font-size: 16px; outline: none; resize: none;
-            line-height: 22px; width: 100%; box-sizing: border-box;
+            flex: 1; background: #050505; color: var(--text); border: none; 
+            padding: 20px; font-size: 16px; outline: none; resize: none;
+            line-height: 24px; width: 100%; white-space: pre; overflow-wrap: normal; overflow-x: auto;
         }
 
-        #status-box { 
-            margin-left: auto; width: 50px; height: 40px; 
-            display: flex; align-items: center; justify-content: center; 
-            font-weight: bold; border-radius: 5px; cursor: pointer; transition: 0.3s;
+        /* ACTION CENTER (Slide-up Drawer) */
+        #action-center {
+            position: absolute; bottom: 0; width: 100%; background: var(--panel);
+            border-top: 2px solid var(--neon); transform: translateY(100%);
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            max-height: 50%; display: flex; flex-direction: column; z-index: 50;
+        }
+        #action-center.active { transform: translateY(0); }
+        .drawer-handle { height: 30px; display: flex; align-items: center; justify-content: center; background: #222; cursor: pointer; }
+        .drawer-handle::after { content: ''; width: 40px; height: 4px; background: var(--neon); border-radius: 2px; }
+        #fix-list { flex: 1; overflow-y: auto; padding: 10px; }
+
+        /* LIVE PREVIEW DRAWER */
+        #preview-drawer {
+            position: absolute; top: 0; right: 0; width: 80%; height: 100%;
+            background: #fff; border-left: 2px solid var(--neon);
+            transform: translateX(100%); transition: 0.3s; z-index: 60;
+        }
+        #preview-drawer.active { transform: translateX(0); }
+
+        /* FIX ITEM UI */
+        .fix-item {
+            background: #1a1a1a; border-left: 4px solid var(--error);
+            margin-bottom: 10px; padding: 15px; display: flex; flex-direction: column; gap: 10px;
+        }
+        .fix-btn { 
+            background: var(--neon); color: #000; border: none; padding: 8px; 
+            font-weight: bold; border-radius: 4px; font-size: 12px;
         }
 
-        #error-container {
-            display: none; background: #111; border-bottom: 2px solid #f00; 
-            max-height: 40vh; overflow-y: auto; width: 100%; z-index: 9;
+        /* FOOTER CONTROLS */
+        .footer { 
+            height: 75px; border-top: 1px solid var(--neon); 
+            display: flex; align-items: center; padding: 0 10px; gap: 8px; background: var(--bg);
         }
-
-        .error-item {
-            padding: 12px; border-bottom: 1px solid #333; color: #f88;
-            font-size: 14px; cursor: pointer;
+        .btn-main { 
+            background: var(--neon); color: #000; border: none; flex: 1; 
+            height: 45px; font-weight: bold; border-radius: 4px; font-size: 11px;
         }
-        .error-item:active { background: #333; }
-
-        button { background: #0f0; color: #000; border: none; padding: 10px 20px; font-weight: bold; cursor: pointer; border-radius: 3px; }
-        
-        /* Auto-save notification */
-        #save-indicator { font-size: 10px; color: #555; margin-left: 10px; }
+        .btn-sec { background: #333; color: var(--neon); border: 1px solid var(--neon); flex: 0.7; height: 45px; font-size: 11px; font-weight: bold;}
     </style>
 </head>
 <body>
 
     <div class="header">
-        <span id="project-title">STUDIO: PHASE 1</span>
-        <span id="save-indicator">IDLE</span>
-        <div id="status-box" onclick="toggleErrorList()" style="background: #0f0; color: #000;">
-            <span id="status-icon">✓</span>
+        <div style="display:flex; flex-direction:column;">
+            <span style="font-weight:bold; letter-spacing:2px;">NEURAL STUDIO</span>
+            <span id="save-indicator" style="font-size:10px; opacity:0.5;">main_module.js</span>
+        </div>
+        <div id="neural-status" onclick="toggleDrawer('action-center')">SYSTEM READY</div>
+    </div>
+
+    <div class="workspace">
+        <textarea id="main-editor" spellcheck="false" placeholder="// Neural Link Established..."></textarea>
+        
+        <!-- Action Center Drawer -->
+        <div id="action-center">
+            <div class="drawer-handle" onclick="toggleDrawer('action-center')"></div>
+            <div id="fix-list">
+                <!-- Logic will inject fix items here -->
+            </div>
+        </div>
+
+        <!-- Live View Drawer -->
+        <div id="preview-drawer">
+            <div style="background:#222; color:#fff; padding:10px; display:flex;">
+                <span style="font-size:12px;">LIVE_PREVIEW</span>
+                <button onclick="toggleDrawer('preview-drawer')" style="margin-left:auto; background:red; color:white; border:none; border-radius:3px;">CLOSE</button>
+            </div>
+            <iframe id="preview-frame" style="width:100%; height:calc(100% - 40px); border:none;"></iframe>
         </div>
     </div>
 
-    <div id="error-container">
-        <div id="error-list"></div>
-    </div>
-
-    <div class="editor-space">
-        <textarea id="main-editor" spellcheck="false" placeholder="Begin coding..."></textarea>
-    </div>
-
     <div class="footer">
-        <input type="file" id="file-input" style="display:none">
-        <button id="load-library" onclick="document.getElementById('file-input').click()">LOAD</button>
-        <button id="clear-btn" onclick="if(confirm('Wipe editor?')) mainEditor.value=''" style="margin-left:10px; background:#444; color:#fff;">CLEAR</button>
+        <button class="btn-sec" id="undo-btn">UNDO</button>
+        <button class="btn-sec" id="redo-btn">REDO</button>
+        <button class="btn-main" id="run-btn">RUN CODE</button>
+        <button class="btn-main" id="fix-all-btn" style="background:var(--error); color:#fff;">FIX ALL</button>
     </div>
 
     <script>
-        const mainEditor = document.getElementById('main-editor');
-        const statusBox = document.getElementById('status-box');
-        const statusIcon = document.getElementById('status-icon');
-        const errorContainer = document.getElementById('error-container');
-        const errorList = document.getElementById('error-list');
-        const saveIndicator = document.getElementById('save-indicator');
+    const mainEditor = document.getElementById('main-editor');
+    const neuralStatus = document.getElementById('neural-status');
+    const fixList = document.getElementById('fix-list');
+    const previewFrame = document.getElementById('preview-frame');
 
-        // 1. GHOST BUFFER (Local Storage Auto-Save)
-        window.onload = () => {
-            const savedCode = localStorage.getItem('studio_buffer');
-            if (savedCode) mainEditor.value = savedCode;
-            runSieve();
-        };
+    let historyStack = [];
+    let redoStack = [];
+    let dismissedUIDs = new Set();
 
-        const autoSave = () => {
-            localStorage.setItem('studio_buffer', mainEditor.value);
-            saveIndicator.innerText = "SAVED";
-            setTimeout(() => { saveIndicator.innerText = "READY"; }, 1000);
-        };
+    // 1. NEURAL DICTIONARY (Intelligence Core)
+    const neuralLibrary = {
+        critical: [
+            { id: 'MISMATCH_BRACE', p: /\{/g, c: /\}/g, n: 'Brace', msg: 'Missing closing }', type: 'structure' },
+            { id: 'MISMATCH_PAREN', p: /\(/g, c: /\)/g, n: 'Paren', msg: 'Missing closing )', type: 'structure' },
+            { id: 'TAG_DIV', p: /<div/g, c: /<\/div>/g, n: 'div', msg: 'Unclosed <div> tag', type: 'tag' }
+        ],
+        typos: [
+            { find: /\bfuncton\b/g, fix: 'function', msg: 'Spelling: function' },
+            { find: /\bcont\b/g, fix: 'const', msg: 'Spelling: const' },
+            { find: /\blett\b/g, fix: 'let', msg: 'Spelling: let' },
+            { find: /\breturnn\b/g, fix: 'return', msg: 'Spelling: return' }
+        ]
+    };
 
-        // 2. THE SIEVE (Logic Engine)
-        function runSieve() {
-            const code = mainEditor.value;
-            const errors = [];
+    // 2. THE SCANNER ENGINE
+    function scanAndDiagnose() {
+        const code = mainEditor.value;
+        const diagnostics = [];
 
-            // Brackets
-            const brackets = [
-                { o: '{', c: '}', n: 'Brace' },
-                { o: '(', c: ')', n: 'Paren' },
-                { o: '[', c: ']', n: 'Bracket' }
-            ];
-            brackets.forEach(b => {
-                const oCount = (code.match(new RegExp('\\' + b.o, 'g')) || []).length;
-                const cCount = (code.match(new RegExp('\\' + b.c, 'g')) || []).length;
-                if (oCount !== cCount) {
-                    errors.push({ msg: `${b.n} Mismatch: ${oCount} vs ${cCount}`, line: findLastOccurrence(code, b.o) });
-                }
-            });
-
-            // HTML Tags
-            const tags = ['div', 'span', 'button', 'script', 'style'];
-            tags.forEach(t => {
-                const oT = (code.match(new RegExp('<' + t, 'g')) || []).length;
-                const cT = (code.match(new RegExp('</' + t, 'g')) || []).length;
-                if (oT !== cT) {
-                    errors.push({ msg: `Tag <${t}> not closed`, line: findLastOccurrence(code, '<' + t) });
-                }
-            });
-
-            // Spelling (Keywords)
-            const keywords = ['function', 'const', 'let', 'return'];
-            keywords.forEach(word => {
-                // Find potential typos (e.g., "functon") using simple regex
-                const typos = code.match(new RegExp('\\b' + word.substring(0,3) + '[a-z]+\\b', 'g')) || [];
-                typos.forEach(t => {
-                    if (t !== word && word.startsWith(t.substring(0,3))) {
-                        errors.push({ msg: `Check spelling: ${t}?`, line: findLastOccurrence(code, t) });
-                    }
-                });
-            });
-
-            updateUI(errors);
-        }
-
-        function findLastOccurrence(code, str) {
-            const index = code.lastIndexOf(str);
-            return code.substring(0, index).split('\n').length;
-        }
-
-        function updateUI(errors) {
-            if (errors.length > 0) {
-                statusBox.style.background = '#f00';
-                statusIcon.innerText = errors.length;
-                errorList.innerHTML = errors.map(e => `
-                    <div class="error-item" onclick="jumpTo(${e.line})">
-                        Line ${e.line}: ${e.msg}
-                    </div>
-                `).join('');
-            } else {
-                statusBox.style.background = '#0f0';
-                statusIcon.innerText = '✓';
-                errorList.innerHTML = '<div style="color:#0f0; padding:10px;">Structure Clean.</div>';
-            }
-        }
-
-        function toggleErrorList() {
-            errorContainer.style.display = errorContainer.style.display === 'block' ? 'none' : 'block';
-        }
-
-        // 3. THE JUMP (Auto-Scroll Logic)
-        function jumpTo(line) {
-            const lines = mainEditor.value.split('\n');
-            let charPos = 0;
-            for (let i = 0; i < line - 1; i++) {
-                charPos += lines[i].length + 1;
-            }
-            mainEditor.focus();
-            mainEditor.setSelectionRange(charPos, charPos + lines[line-1].length);
+        // --- PART A: Structural Integrity ---
+        neuralLibrary.critical.forEach(rule => {
+            const openMatches = [...code.matchAll(rule.p)];
+            const closeMatches = [...code.matchAll(rule.c)];
             
-            // Scroll calculation for Moto G35
-            const lineHeight = 22; 
-            mainEditor.scrollTop = (line - 3) * lineHeight;
-            errorContainer.style.display = 'none';
+            if (openMatches.length > closeMatches.length) {
+                const lastOpen = openMatches[openMatches.length - 1];
+                diagnostics.push({
+                    uid: `struct-${rule.id}`,
+                    severity: 'high',
+                    msg: rule.msg,
+                    pos: lastOpen.index,
+                    suggestion: rule.id.includes('TAG') ? `</${rule.n}>` : rule.c.source.replace('\\', ''),
+                    action: 'INJECT'
+                });
+            }
+        });
+
+        // --- PART B: Intelligence Typo Detection ---
+        neuralLibrary.typos.forEach(rule => {
+            let match;
+            while ((match = rule.find.exec(code)) !== null) {
+                const uid = `typo-${rule.fix}-${match.index}`;
+                if (!dismissedUIDs.has(uid)) {
+                    diagnostics.push({
+                        uid: uid,
+                        severity: 'medium',
+                        msg: rule.msg,
+                        pos: match.index,
+                        len: match[0].length,
+                        suggestion: rule.fix,
+                        action: 'REPLACE'
+                    });
+                }
+            }
+        });
+
+        renderDiagnostics(diagnostics);
+    }
+
+    // 3. UI RENDERER (Action Center Bridge)
+    function renderDiagnostics(findings) {
+        fixList.innerHTML = '';
+        const active = findings.filter(f => !dismissedUIDs.has(f.uid));
+
+        if (active.length > 0) {
+            neuralStatus.style.borderColor = 'var(--error)';
+            neuralStatus.style.color = 'var(--error)';
+            neuralStatus.innerText = `${active.length} FAULTS DETECTED`;
+        } else {
+            neuralStatus.style.borderColor = 'var(--neon)';
+            neuralStatus.style.color = 'var(--neon)';
+            neuralStatus.innerText = `SYSTEM OPTIMAL`;
         }
 
-        // 4. LOAD LOGIC
-        document.getElementById('file-input').addEventListener('change', function(e) {
-            const reader = new FileReader();
-            reader.onload = (ev) => {
-                mainEditor.value = ev.target.result;
-                runSieve();
-            };
-            reader.readAsText(e.target.files[0]);
+        active.forEach(issue => {
+            const div = document.createElement('div');
+            div.className = 'fix-item';
+            div.innerHTML = `
+                <div style="font-size:12px; color:#aaa;">${issue.severity.toUpperCase()} PRIORITY</div>
+                <div style="font-weight:bold;">${issue.msg}</div>
+                <div style="display:flex; gap:10px; margin-top:5px;">
+                    <button class="fix-btn" onclick="applySmartFix('${issue.uid}', ${issue.pos}, ${issue.len || 0}, '${issue.suggestion}', '${issue.action}')">
+                        ${issue.action} ${issue.suggestion}
+                    </button>
+                    <button class="fix-btn" style="background:#444; color:#fff;" onclick="dismissFault('${issue.uid}')">EXCEPT</button>
+                </div>
+            `;
+            fixList.appendChild(div);
         });
+    }
 
-        mainEditor.addEventListener('input', () => {
-            runSieve();
-            autoSave();
+    // 4. PREVIEW & UI CONTROLS
+    function toggleDrawer(id) {
+        const el = document.getElementById(id);
+        el.classList.toggle('active');
+        if (id === 'action-center' && el.classList.contains('active')) scanAndDiagnose();
+    }
+
+    function dismissFault(uid) {
+        dismissedUIDs.add(uid);
+        scanAndDiagnose();
+    }
+
+    // Initialize
+    mainEditor.addEventListener('input', () => {
+        scanAndDiagnose();
+        // Placeholder for History Save
+    });
+
+    window.onload = () => { scanAndDiagnose(); };
+    // 5. THE SELF-HEALER (Surgical Correction)
+    function applySmartFix(uid, pos, len, suggestion, action) {
+        const code = mainEditor.value;
+        saveState(); // Save to Undo stack before fixing
+
+        let newCode;
+        if (action === 'REPLACE') {
+            // Replace the typo (e.g., 'functon' -> 'function')
+            newCode = code.substring(0, pos) + suggestion + code.substring(pos + len);
+        } else if (action === 'INJECT') {
+            // Inject missing structure (e.g., adding '}' at the end of a block)
+            // Smart Injection: Finds the next logical newline or end of file
+            newCode = code.substring(0, pos + 1) + "\n" + suggestion + code.substring(pos + 1);
+        }
+
+        mainEditor.value = newCode;
+        dismissedUIDs.add(uid); // Remove from list once fixed
+        scanAndDiagnose();
+        
+        // Visual Feedback: Snap cursor to the fix
+        mainEditor.focus();
+        mainEditor.setSelectionRange(pos, pos + suggestion.length);
+    }
+
+    // 6. THE RUNTIME SANDBOX (Live Execution)
+    function runCode() {
+        const code = mainEditor.value;
+        const frame = document.getElementById('preview-frame');
+        const drawer = document.getElementById('preview-drawer');
+        
+        // Open the preview pane
+        drawer.classList.add('active');
+
+        // Create a data blob for the iframe to keep it isolated
+        const blob = new Blob([`
+            <!DOCTYPE html>
+            <html>
+            <head><style>body{background:#fff;font-family:sans-serif;padding:20px;word-wrap:break-word;}</style></head>
+            <body>
+                <div id="app-root"></div>
+                <script>
+                    try {
+                        ${code}
+                    } catch (err) {
+                        document.body.innerHTML = '<div style="color:red;font-weight:bold;border:2px solid red;padding:10px;">RUNTIME ERROR:<br>' + err.message + '</div>';
+                    }
+                <\/script>
+            </body>
+            </html>
+        `], { type: 'text/html' });
+
+        frame.src = URL.createObjectURL(blob);
+    }
+
+    // 7. FIX ALL (Batch Correction)
+    function fixAllFaults() {
+        // We run backwards through the diagnostics so indices don't shift
+        const code = mainEditor.value;
+        const findings = []; // Get fresh scan data
+        
+        // Simplified batch logic: We prioritize typos first
+        neuralLibrary.typos.forEach(rule => {
+            mainEditor.value = mainEditor.value.replace(rule.find, rule.fix);
         });
-    </script>
+        
+        scanAndDiagnose();
+        alert('Neural Sieve: Automated Batch Fix Applied.');
+    }
+
+    // 8. EVENT WIRING
+    document.getElementById('run-btn').onclick = runCode;
+    document.getElementById('fix-all-btn').onclick = fixAllFaults;
+    // 9. TIME TRAVEL (Undo/Redo Logic)
+    function saveState() {
+        // Limit history to 50 steps to save memory on Moto G35
+        if (historyStack.length >= 50) historyStack.shift();
+        historyStack.push(mainEditor.value);
+        redoStack = []; // Clear redo on new input
+        updateSaveIndicator('CHANGES PENDING');
+    }
+
+    function undoAction() {
+        if (historyStack.length > 1) {
+            redoStack.push(historyStack.pop());
+            const previousState = historyStack[historyStack.length - 1];
+            mainEditor.value = previousState;
+            scanAndDiagnose();
+            updateSaveIndicator('UNDO APPLIED');
+        }
+    }
+
+    function redoAction() {
+        if (redoStack.length > 0) {
+            const nextState = redoStack.pop();
+            mainEditor.value = nextState;
+            historyStack.push(nextState);
+            scanAndDiagnose();
+            updateSaveIndicator('REDO APPLIED');
+        }
+    }
+
+    // 10. GHOST BUFFER (Persistence)
+    function updateSaveIndicator(text) {
+        const indicator = document.getElementById('save-indicator');
+        indicator.innerText = text;
+        indicator.style.opacity = '1';
+        
+        // Auto-save to LocalStorage
+        localStorage.setItem('neural_studio_buffer', mainEditor.value);
+        
+        setTimeout(() => { indicator.style.opacity = '0.4'; }, 2000);
+    }
+
+    // 11. PRECISION NAVIGATION
+    function jumpTo(pos, len) {
+        mainEditor.focus();
+        mainEditor.setSelectionRange(pos, pos + len);
+        
+        // Calculate scroll offset to center the line
+        const lines = mainEditor.value.substr(0, pos).split('\n');
+        const lineNumber = lines.length;
+        const lineHeight = 24; // Matching CSS
+        mainEditor.scrollTop = (lineNumber * lineHeight) - (mainEditor.clientHeight / 2);
+        
+        // Close the action center to show the code
+        document.getElementById('action-center').classList.remove('active');
+    }
+
+    // 12. UI INITIALIZATION & SYNC
+    document.getElementById('undo-btn').onclick = undoAction;
+    document.getElementById('redo-btn').onclick = redoAction;
+
+    // Load from cache on startup
+    const cached = localStorage.getItem('neural_studio_buffer');
+    if (cached) {
+        mainEditor.value = cached;
+        saveState();
+        scanAndDiagnose();
+    }
+
+    // Capture "Tab" key for actual coding feel
+    mainEditor.addEventListener('keydown', (e) => {
+        if (e.key === 'Tab') {
+            e.preventDefault();
+            const start = mainEditor.selectionStart;
+            const end = mainEditor.selectionEnd;
+            mainEditor.value = mainEditor.value.substring(0, start) + "    " + mainEditor.value.substring(end);
+            mainEditor.selectionStart = mainEditor.selectionEnd = start + 4;
+            saveState();
+        }
+    });
+
+    // Debounced Scanner to keep performance high
+    let scanTimeout;
+    mainEditor.addEventListener('input', () => {
+        clearTimeout(scanTimeout);
+        scanTimeout = setTimeout(() => {
+            saveState();
+            scanAndDiagnose();
+        }, 500); // Wait 500ms after typing stops
+    });
+</script>
 </body>
 </html>
