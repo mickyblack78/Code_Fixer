@@ -70,6 +70,25 @@
             background: var(--neon); color: #000; border: none; flex: 1; 
             height: 45px; font-weight: bold; border-radius: 4px; font-size: 11px;
         }
+        #diag-drawer {
+    position: fixed;
+    right: 10px;
+    top: 10px;
+    width: 300px;
+    background: #222;
+    color: #ff3333;
+    border: 2px solid #444;
+    padding: 15px;
+    font-family: monospace;
+    z-index: 9999;
+    display: none; /* Stays hidden until an error is found */
+}
+
+.fault-item {
+    border-bottom: 1px solid #444;
+    padding: 5px 0;
+    font-size: 12px;
+}
         .btn-sec { background: #333; color: var(--neon); border: 1px solid var(--neon); flex: 0.7; height: 45px; font-size: 11px; font-weight: bold;}
     </style>
 </head>
