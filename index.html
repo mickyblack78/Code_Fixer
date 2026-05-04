@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Master PWA Studio</title>
     <style>
-        /* This CSS comes from your 'CORE_LAYOUT' library entry */
         html, body { 
             background: #000; color: #0f0; font-family: monospace;
             margin: 0; padding: 0; height: 100%; overflow: hidden;
@@ -15,6 +14,7 @@
         .footer { height: 70px; border-top: 1px solid #0f0; display: flex; align-items: center; padding: 0 10px; }
         .editor-space { flex: 1; overflow: hidden; display: flex; flex-direction: column; }
         textarea { flex: 1; background: #050505; color: #0f0; border: none; padding: 15px; font-size: 14px; outline: none; resize: none; }
+        button { background: #0f0; color: #000; border: none; padding: 10px 20px; font-weight: bold; cursor: pointer; }
     </style>
 </head>
 <body>
@@ -28,39 +28,36 @@
     </div>
 
     <div class="footer">
-        <button id="load-library">LOAD LIBRARY</button>
-        <!-- Placeholder for future search and snippets -->
+        <!-- The Hidden Input that Android needs to see the files -->
+        <input type="file" id="file-input" style="display:none">
+        <button id="load-library" onclick="document.getElementById('file-input').click()">LOAD LIBRARY</button>
     </div>
 
     <script>
-        <input type="file" id="load-library" style="display:none">
-        <button onclick="document.getElementById('load-library').click()">LOAD LIBRARY</button>
-        const editor = document.getElementById('main-editor');
+        const fileInput = document.getElementById('file-input');
+        const mainEditor = document.getElementById('main-editor');
 
-loadBtn.addEventListener('click', async () => {
-    try {
-        const [fileHandle] = await window.showOpenFilePicker({
-            types: [{
-                description: 'JSON Library File',
-                accept: {'application/json': ['.json']}
-            }]
+        // This listener triggers when you select your MasterLibrary.json
+        fileInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                try {
+                    const libraryData = JSON.parse(event.target.result);
+                    
+                    // Fills the textarea with your library item titles
+                    mainEditor.value = "--- SUCCESS: LIBRARY LOADED ---\n" + 
+                                       libraryData.editor_blueprints.map(i => i.title).join('\n');
+                } catch (err) {
+                    alert("JSON Error: Check your MasterLibrary.json file formatting.");
+                }
+            };
+            reader.readAsText(file);
         });
-        const file = await fileHandle.getFile();
-        const content = await file.text();
 
-        // 3. Parse the DNA and notify the user
-        const libraryData = JSON.parse(content);
-        alert("Library Loaded: " + libraryData.library_metadata.version);
-        
-        // For now, let's just dump the library names into the editor to prove it works
-        editor.value = "--- LIBRARY ITEMS LOADED ---\n" + 
-                       libraryData.editor_blueprints.map(i => i.title).join('\n');
-
-    } catch (err) {
-        console.error("Storage handshake failed:", err);
-    }
-});
-        console.log("Editor Shell Ready.");
+        console.log("System Operational.");
     </script>
 </body>
 </html>
