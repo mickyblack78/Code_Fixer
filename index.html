@@ -213,12 +213,7 @@
     // 4. OUTPUT TO UI
     renderDiagnostics(findings);
         }
-
-
-        
-    
-
-    function renderDiagnostics(findings) {
+        function renderDiagnostics(findings) {
         fixList.innerHTML = '';
         // Separate visible faults from hidden ones
         const active = findings.filter(f => !dismissedUIDs.has(f.uid));
@@ -442,5 +437,9 @@
 }
 document.getElementById('save-indicator').onclick = () => { mainEditor.select(); };
 </script>
+    <div id="diag-drawer">
+    <h3>Logic Faults</h3>
+    <div id="fixList"></div> <!-- This is where the 60 lines of code sends the text -->
+    </div>
 </body>
 </html>
