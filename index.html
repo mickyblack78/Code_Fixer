@@ -33,21 +33,18 @@
     </div>
 
     <script>
-        const loadBtn = document.getElementById('load-library');
-const editor = document.getElementById('main-editor');
+        <input type="file" id="load-library" style="display:none">
+        <button onclick="document.getElementById('load-library').click()">LOAD LIBRARY</button>
+        const editor = document.getElementById('main-editor');
 
-// The logic we just added to the library:
 loadBtn.addEventListener('click', async () => {
     try {
-        // 1. Open the file picker on your G35
         const [fileHandle] = await window.showOpenFilePicker({
             types: [{
                 description: 'JSON Library File',
                 accept: {'application/json': ['.json']}
             }]
         });
-
-        // 2. Read the file
         const file = await fileHandle.getFile();
         const content = await file.text();
 
