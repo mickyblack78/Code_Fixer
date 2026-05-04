@@ -206,17 +206,19 @@
         active.forEach(issue => {
             const div = document.createElement('div');
             div.className = 'fix-item';
-            div.innerHTML = `<b onclick="inspectError(${issue.pos})" style="cursor:pointer; text-decoration:underline;">${issue.msg}</b> ...`;
-                <div style="font-size:10px; opacity:0.6;">${issue.uid.split('-')[0].toUpperCase()} ERROR</div>
-                <b>${issue.msg}</b>
+            div.innerHTML = `
+                <div onclick="inspectError(${issue.pos})" style="cursor:pointer;">
+                    <div style="font-size:10px; color:var(--neon); text-decoration:underline;">TAP TO VIEW LINE</div>
+                    <b style="color:#fff;">${issue.msg}</b>
+                </div>
                 <div style="display:flex; gap:10px; margin-top:8px;">
-                    <button class="fix-btn" onclick="applySmartFix('${issue.uid}', ${issue.pos}, ${issue.len || 0}, '${issue.suggestion}', '${issue.action}')">APPLY FIX</button>
+                    <button class="fix-btn" onclick="applySmartFix('${issue.uid}', ${issue.pos}, ${issue.len || 0}, '${issue.suggestion}', '${issue.action}')">${issue.action}</button>
                     <button class="fix-btn" style="background:#333; color:#fff;" onclick="dismissFault('${issue.uid}')">EXCEPT</button>
                 </div>
             `;
             fixList.appendChild(div);
         });
-    } 
+        
 
     // 4. PREVIEW & UI CONTROLS
     function toggleDrawer(id) {
